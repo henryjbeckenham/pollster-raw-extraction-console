@@ -6,6 +6,7 @@ For an uploaded file named `example-poll.pdf`, the zip should contain a folder n
 example-poll/
 ├── manifest.json
 ├── report_text.md
+├── chatgpt_review.md
 ├── report_tables.xlsx
 ├── report_raw.json
 ├── tables_csv/
@@ -40,6 +41,18 @@ Required content:
 - Page count
 - One `## Page X` heading per extracted page
 - Raw extracted page text under each page heading
+
+## `chatgpt_review.md`
+
+Required content:
+
+- Source filename
+- Page count
+- One `## Page X` heading per extracted page
+- Page image filename for each page
+- Table IDs found on each page
+- Extracted page text
+- Basic Markdown rendering of each extracted table, where possible
 
 ## `report_raw.json`
 

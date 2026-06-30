@@ -43,6 +43,7 @@ def write_report_outputs(result: ExtractionResult, output_dir: Path) -> list[str
     output_files = _expected_output_files(result)
 
     _write_report_text(result, output_dir / "report_text.md")
+    _write_chatgpt_review(result, output_dir / "chatgpt_review.md")
     _write_report_raw_json(result, output_dir / "report_raw.json")
     _write_table_csvs(result, csv_dir)
     _write_page_images(result, image_dir)
@@ -56,6 +57,7 @@ def _expected_output_files(result: ExtractionResult) -> list[str]:
     output_files = [
         "manifest.json",
         "report_text.md",
+        "chatgpt_review.md",
         "report_tables.xlsx",
         "report_raw.json",
     ]
@@ -87,6 +89,53 @@ def _write_report_text(result: ExtractionResult, output_path: Path) -> None:
                 "",
             ]
         )
+
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_chatgpt_review(result: ExtractionResult, output_path: Path) -> None:
+    lines = [
+        f"# ChatGPT Review: {result.source_filename}",
+        "",
+        f"Source filename: {result.source_filename}",
+        f"Page count: {result.page_count}",
+        f"Total detected tables: {result.total_tables}",
+        "",
+    ]
+
+    for page in result.pages:
+        table_ids = [table.table_id for table in page.tables]
+        lines.extend(
+            [
+                f"## Page {page.page_number}",
+                "",
+                f"Page image filename: `{page.page_image_filename}`",
+                f"Table IDs found on this page: {', '.join(table_ids) if table_ids else 'None'}",
+                "",
+                "### Extracted Page Text",
+                "",
+                page.text.rstrip() or "_No text extracted._",
+                "",
+                "### Extracted Tables",
+                "",
+            ]
+        )
+
+        if not page.tables:
+            lines.extend(["_No tables detected on this page._", ""])
+            continue
+
+        for table in page.tables:
+            lines.extend(
+                [
+                    f"#### Table {table.table_id}",
+                    "",
+                    f"CSV filename: `tables_csv/{table.csv_filename}`",
+                    "",
+                ]
+            )
+            lines.extend(_table_to_markdown_lines(table))
+            lines.append("")
 
     output_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -171,6 +220,48 @@ def _table_index_row(table: ExtractedTable) -> dict[str, object]:
         "csv_filename": table.csv_filename,
         "notes": table.notes,
     }
+
+
+def _table_to_markdown_lines(table: ExtractedTable) -> list[str]:
+    if not table.rows:
+        return ["_No rows extracted for this table._"]
+
+    column_count = table.column_count
+    if column_count == 0:
+        return ["_No cells extracted for this table._"]
+
+    normalized_rows = [
+        row + [""] * (column_count - len(row))
+        for row in table.rows
+    ]
+
+    header = [_escape_markdown_table_cell(cell) for cell in normalized_rows[0]]
+    separator = ["---"] * column_count
+    body_rows = [
+        [_escape_markdown_table_cell(cell) for cell in row]
+        for row in normalized_rows[1:]
+    ]
+
+    lines = [
+        _markdown_table_row(header),
+        _markdown_table_row(separator),
+    ]
+    lines.extend(_markdown_table_row(row) for row in body_rows)
+    return lines
+
+
+def _markdown_table_row(cells: list[str]) -> str:
+    return f"| {' | '.join(cells)} |"
+
+
+def _escape_markdown_table_cell(value: object) -> str:
+    text = "" if value is None else str(value)
+    text = text.replace("\\", "\\\\")
+    text = text.replace("|", "\\|")
+    text = text.replace("\r\n", "<br>")
+    text = text.replace("\n", "<br>")
+    text = text.replace("\r", "<br>")
+    return text.strip()
 
 
 def _iter_tables(result: ExtractionResult) -> list[ExtractedTable]:

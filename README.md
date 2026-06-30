@@ -44,11 +44,14 @@ The downloaded zip contains one folder per uploaded PDF. Each report folder cont
 ```text
 manifest.json
 report_text.md
+chatgpt_review.md
 report_tables.xlsx
 report_raw.json
 tables_csv/
 page_images/
 ```
+
+`chatgpt_review.md` is a review-friendly Markdown file with page image filenames, table IDs, page text, and basic Markdown renderings of detected tables.
 
 Each detected table is saved as `tables_csv/<table_id>.csv`, where table IDs use the format `p001_t001`, `p001_t002`, `p002_t001`, and so on.
 
