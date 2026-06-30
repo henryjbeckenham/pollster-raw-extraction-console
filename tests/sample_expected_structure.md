@@ -53,6 +53,8 @@ Required content:
 - Table IDs found on each page
 - Extracted page text
 - Basic Markdown rendering of each extracted table, where possible
+- Quality label beside each shown table: `good`, `partial`, or `poor`
+- Omission notice when low-quality table fragments are hidden from the review
 
 ## `report_raw.json`
 

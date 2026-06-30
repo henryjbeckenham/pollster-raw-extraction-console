@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -125,17 +126,31 @@ def _write_chatgpt_review(result: ExtractionResult, output_path: Path) -> None:
             lines.extend(["_No tables detected on this page._", ""])
             continue
 
+        omitted_fragments = 0
         for table in page.tables:
+            if _should_hide_table_from_review(table):
+                omitted_fragments += 1
+                continue
+
             lines.extend(
                 [
                     f"#### Table {table.table_id}",
                     "",
+                    f"Quality label: `{_table_quality_label(table)}`",
                     f"CSV filename: `tables_csv/{table.csv_filename}`",
                     "",
                 ]
             )
             lines.extend(_table_to_markdown_lines(table))
             lines.append("")
+
+        if omitted_fragments:
+            lines.extend(
+                [
+                    "Some low-quality table fragments were omitted from this review.",
+                    "",
+                ]
+            )
 
     output_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -248,6 +263,70 @@ def _table_to_markdown_lines(table: ExtractedTable) -> list[str]:
     ]
     lines.extend(_markdown_table_row(row) for row in body_rows)
     return lines
+
+
+def _should_hide_table_from_review(table: ExtractedTable) -> bool:
+    stats = _table_quality_stats(table)
+    if stats["total_cells"] == 0:
+        return True
+    if stats["meaningful_cells"] == 0:
+        return True
+    if stats["blank_ratio"] >= 0.75:
+        return True
+    if stats["total_cells"] >= 4 and stats["meaningful_cells"] < 2:
+        return True
+    return False
+
+
+def _table_quality_label(table: ExtractedTable) -> str:
+    stats = _table_quality_stats(table)
+
+    if stats["total_cells"] == 0 or stats["meaningful_cells"] == 0:
+        return "poor"
+    if (
+        table.row_count >= 2
+        and table.column_count >= 2
+        and stats["meaningful_cells"] >= 4
+        and stats["blank_ratio"] <= 0.25
+    ):
+        return "good"
+    if stats["meaningful_cells"] >= 2 and stats["blank_ratio"] <= 0.60:
+        return "partial"
+    return "poor"
+
+
+def _table_quality_stats(table: ExtractedTable) -> dict[str, float | int]:
+    total_cells = table.row_count * table.column_count
+    if total_cells == 0:
+        return {
+            "total_cells": 0,
+            "blank_cells": 0,
+            "meaningful_cells": 0,
+            "blank_ratio": 1.0,
+        }
+
+    blank_cells = 0
+    meaningful_cells = 0
+
+    for row in table.rows:
+        padded_row = row + [""] * (table.column_count - len(row))
+        for cell in padded_row:
+            text = str(cell).strip()
+            if not text:
+                blank_cells += 1
+            if _has_meaningful_content(text):
+                meaningful_cells += 1
+
+    return {
+        "total_cells": total_cells,
+        "blank_cells": blank_cells,
+        "meaningful_cells": meaningful_cells,
+        "blank_ratio": blank_cells / total_cells,
+    }
+
+
+def _has_meaningful_content(text: str) -> bool:
+    return bool(re.search(r"[A-Za-z0-9]", text))
 
 
 def _markdown_table_row(cells: list[str]) -> str:
