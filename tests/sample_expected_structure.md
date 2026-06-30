@@ -54,7 +54,7 @@ Required content:
 - Extracted page text
 - Basic Markdown rendering of each extracted table, where possible
 - Quality label beside each shown table: `good`, `partial`, or `poor`
-- Omission notice when low-quality table fragments are hidden from the review
+- Omission notice on relevant pages: `Low-quality table fragments omitted from review.`
 
 ## `report_raw.json`
 

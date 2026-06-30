@@ -147,7 +147,7 @@ def _write_chatgpt_review(result: ExtractionResult, output_path: Path) -> None:
         if omitted_fragments:
             lines.extend(
                 [
-                    "Some low-quality table fragments were omitted from this review.",
+                    "Low-quality table fragments omitted from review.",
                     "",
                 ]
             )

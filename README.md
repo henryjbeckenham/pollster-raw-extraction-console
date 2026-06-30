@@ -51,7 +51,7 @@ tables_csv/
 page_images/
 ```
 
-`chatgpt_review.md` is a review-friendly Markdown file with page image filenames, table IDs, page text, quality labels for shown tables, and basic Markdown renderings of detected tables. Empty or near-empty table fragments are omitted from this review file only; they remain preserved in the raw JSON, CSV, and Excel outputs.
+`chatgpt_review.md` is a review-friendly Markdown file with page image filenames, table IDs, page text, quality labels for shown tables, and basic Markdown renderings of detected tables. Empty, near-empty, and low-quality table fragments are omitted from this review file only; they remain preserved in the raw JSON, CSV, and Excel outputs.
 
 Each detected table is saved as `tables_csv/<table_id>.csv`, where table IDs use the format `p001_t001`, `p001_t002`, `p002_t001`, and so on.
 
